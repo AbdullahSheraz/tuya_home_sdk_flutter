@@ -10,6 +10,9 @@ class TuyaHomeSdkFlutter {
   final _deviceEvent = const EventChannel(
     'tuya_home_sdk_flutter_device_dps_event',
   );
+  final _deviceDiscoveryEvent = const EventChannel(
+    'tuya_home_sdk_flutter_device_discovery_event',
+  );
   static const tag = "Tuya";
 
   TuyaHomeSdkFlutter._();
@@ -1041,6 +1044,20 @@ class TuyaHomeSdkFlutter {
       _log(e);
       return null;
     }
+  }
+
+  /// Starts the discovery of Tuya Bluetooth smart devices and returns a stream of discovered devices.
+  ///
+  /// to a [ThingSmartDeviceModel] instance.
+  ///
+  /// Returns a [Stream] of [ThingSmartDeviceModel] representing the discovered devices.
+
+  Stream<ThingSmartDeviceModel> discoverDevices() {
+    methodChannel.invokeMethod<dynamic>('discoverDevices');
+    return _deviceDiscoveryEvent.receiveBroadcastStream().map(
+      (dynamic event) =>
+          ThingSmartDeviceModel.fromJson(event.cast<String, dynamic>()),
+    );
   }
 
   /// Retrieves a list of devices associated with a specific home ID.

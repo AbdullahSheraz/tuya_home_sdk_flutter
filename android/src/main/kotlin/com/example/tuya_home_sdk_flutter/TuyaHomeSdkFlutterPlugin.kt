@@ -76,7 +76,7 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
     private var mActivity: Activity? = null
     private var eventSink: EventSink? = null
     private var device: IThingDevice? = null
-
+    private var deviceDiscoveryHandler = DeviceDiscoveryStreamHandler()
     private var permissionGranted: Boolean = false
 
 
@@ -86,8 +86,14 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
             flutterPluginBinding.binaryMessenger,
             "tuya_home_sdk_flutter_device_dps_event"
         )
+        val deviceEvent = EventChannel(
+            flutterPluginBinding.binaryMessenger,
+            "tuya_home_sdk_flutter_device_discovery_event",
+
+            )
         mContext = flutterPluginBinding.applicationContext
         event.setStreamHandler(this)
+        deviceEvent.setStreamHandler(deviceDiscoveryHandler)
         channel.setMethodCallHandler(this)
 
     }
@@ -759,6 +765,7 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
         println("Tuya check permission $permissionGranted")
         if (permissionGranted) {
             println("Tuya Permission Granted")
+            ThingHomeSdk.getBleOperator().stopLeScan()
             ThingHomeSdk.getBleOperator().startLeScan(9000, ScanType.SINGLE) { bean ->
                 println("Tuya Ble ${bean.productId}")
                 ThingHomeSdk.getActivatorInstance().getActivatorDeviceInfo(
@@ -774,8 +781,8 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
                             device["iconUrl"] = info.icon
                             device["mac"] = bean.mac
 
-                            ThingHomeSdk.getBleOperator().stopLeScan()
-                            result.success(device)
+                            deviceDiscoveryHandler.discoverySink?.success(device)
+
                         }
 
                         override fun onError(errorCode: String?, errorMessage: String?) {
@@ -788,6 +795,7 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
 
 
             }
+                        result.success(null)
         } else {
             result.error("Permission Denied", "Permission Denied", null)
         }
