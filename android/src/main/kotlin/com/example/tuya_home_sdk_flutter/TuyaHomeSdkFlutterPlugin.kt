@@ -757,50 +757,61 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
     }
 
     private fun discoverDevices(result: Result) {
+    println("Tuya start scan")
+    Log.i("Tuya", "Tuya start scan log")
+    checkPermission()
 
-        println("Tuya start scan")
-        Log.i("Tuya", "Tuya start scan log")
-        checkPermission()
-
-        println("Tuya check permission $permissionGranted")
-        if (permissionGranted) {
-            println("Tuya Permission Granted")
-            ThingHomeSdk.getBleOperator().stopLeScan()
-            ThingHomeSdk.getBleOperator().startLeScan(9000, ScanType.SINGLE) { bean ->
-                println("Tuya Ble ${bean.productId}")
-                ThingHomeSdk.getActivatorInstance().getActivatorDeviceInfo(
-                    bean.productId,
-                    bean.uuid,
-                    bean.mac,
-                    object : IThingDataCallback<ConfigProductInfoBean> {
-                        override fun onSuccess(info: ConfigProductInfoBean?) {
-                            val device = hashMapOf<String, Any>()
-                            device["productId"] = bean.productId
-                            device["uuid"] = bean.uuid
-                            device["name"] = info!!.name
-                            device["iconUrl"] = info.icon
-                            device["mac"] = bean.mac
-
-                            deviceDiscoveryHandler.discoverySink?.success(device)
-
-                        }
-
-                        override fun onError(errorCode: String?, errorMessage: String?) {
-                            println("Tuya error $errorMessage")
-                            ThingHomeSdk.getBleOperator().stopLeScan()
-                            result.error(errorCode ?: "", errorMessage, null)
-                        }
-                    }
-                )
-
-
-            }
-                        result.success(null)
-        } else {
-            result.error("Permission Denied", "Permission Denied", null)
-        }
-
+    println("Tuya check permission $permissionGranted")
+    if (!permissionGranted) {
+        result.error("Permission Denied", "Permission Denied", null)
+        return
     }
+
+    // Stop any previous scan
+    ThingHomeSdk.getBleOperator().stopLeScan()
+
+    // Create scan settings using the builder (like in Tuya docs)
+    val scanSetting = LeScanSetting.Builder()
+        .setTimeout(9000) // scan duration in ms
+        .addScanType(ScanType.SINGLE) // or add multiple types if needed
+        .build()
+
+    // Start scanning
+    ThingHomeSdk.getBleOperator().startLeScan(scanSetting, object : BleScanResponse {
+        override fun onResult(bean: ScanDeviceBean) {
+            println("Tuya Ble ${bean.productId}")
+
+            ThingHomeSdk.getActivatorInstance().getActivatorDeviceInfo(
+                bean.productId,
+                bean.uuid,
+                bean.mac,
+                object : IThingDataCallback<ConfigProductInfoBean> {
+                    override fun onSuccess(info: ConfigProductInfoBean?) {
+                        val device = hashMapOf<String, Any>(
+                            "productId" to bean.productId,
+                            "uuid" to bean.uuid,
+                            "name" to (info?.name ?: ""),
+                            "iconUrl" to (info?.icon ?: ""),
+                            "mac" to bean.mac
+                        )
+
+                        // Send discovered device back
+                        deviceDiscoveryHandler.discoverySink?.success(device)
+                    }
+
+                    override fun onError(errorCode: String?, errorMessage: String?) {
+                        println("Tuya error $errorMessage")
+                        ThingHomeSdk.getBleOperator().stopLeScan()
+                        result.error(errorCode ?: "", errorMessage, null)
+                    }
+                }
+            )
+        }
+    })
+
+    // Let Flutter know scan started successfully
+    result.success(null)
+}
 
     private fun getWifiSsid(result: Result) {
         val connectivityManager =
