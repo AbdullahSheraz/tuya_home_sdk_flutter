@@ -77,7 +77,6 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
     private var eventSink: EventSink? = null
     private var device: IThingDevice? = null
     private var deviceDiscoveryHandler = DeviceDiscoveryStreamHandler()
-    private lateinit var wifiDiscoveryHandler: WifiDiscoveryStreamHandler
     private var permissionGranted: Boolean = false
 
 
@@ -91,17 +90,10 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
             flutterPluginBinding.binaryMessenger,
             "tuya_home_sdk_flutter_device_discovery_event",
         )
-        val wifiEvent = EventChannel(
-            flutterPluginBinding.binaryMessenger,
-            "tuya_home_sdk_flutter_wifi_discovery_event"
-        )
         mContext = flutterPluginBinding.applicationContext
-
-        wifiDiscoveryHandler = WifiDiscoveryStreamHandler(mContext)
 
         event.setStreamHandler(this)
         deviceEvent.setStreamHandler(deviceDiscoveryHandler)
-        wifiEvent.setStreamHandler(wifiDiscoveryHandler)
         channel.setMethodCallHandler(this)
 
     }
