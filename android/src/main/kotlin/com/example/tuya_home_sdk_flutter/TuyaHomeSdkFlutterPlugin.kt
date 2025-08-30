@@ -77,6 +77,7 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
     private var eventSink: EventSink? = null
     private var device: IThingDevice? = null
     private var deviceDiscoveryHandler = DeviceDiscoveryStreamHandler()
+    private lateinit var wifiDiscoveryHandler: WifiDiscoveryStreamHandler
     private var permissionGranted: Boolean = false
 
 
@@ -89,11 +90,18 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
         val deviceEvent = EventChannel(
             flutterPluginBinding.binaryMessenger,
             "tuya_home_sdk_flutter_device_discovery_event",
-
-            )
+        )
+        val wifiEvent = EventChannel(
+            flutterPluginBinding.binaryMessenger,
+            "tuya_home_sdk_flutter_wifi_discovery_event"
+        )
         mContext = flutterPluginBinding.applicationContext
+
+        wifiDiscoveryHandler = WifiDiscoveryStreamHandler(mContext)
+
         event.setStreamHandler(this)
         deviceEvent.setStreamHandler(deviceDiscoveryHandler)
+        wifiEvent.setStreamHandler(wifiDiscoveryHandler)
         channel.setMethodCallHandler(this)
 
     }
@@ -757,61 +765,61 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
     }
 
     private fun discoverDevices(result: Result) {
-    println("Tuya start scan")
-    Log.i("Tuya", "Tuya start scan log")
-    checkPermission()
+        println("Tuya start scan")
+        Log.i("Tuya", "Tuya start scan log")
+        checkPermission()
 
-    println("Tuya check permission $permissionGranted")
-    if (!permissionGranted) {
-        result.error("Permission Denied", "Permission Denied", null)
-        return
-    }
-
-    // Stop any previous scan
-    ThingHomeSdk.getBleOperator().stopLeScan()
-
-    // Create scan settings using the builder (like in Tuya docs)
-    val scanSetting = LeScanSetting.Builder()
-        .setTimeout(9000) // scan duration in ms
-        .addScanType(ScanType.SINGLE) // or add multiple types if needed
-        .build()
-
-    // Start scanning
-    ThingHomeSdk.getBleOperator().startLeScan(scanSetting, object : BleScanResponse {
-        override fun onResult(bean: ScanDeviceBean) {
-            println("Tuya Ble ${bean.productId}")
-
-            ThingHomeSdk.getActivatorInstance().getActivatorDeviceInfo(
-                bean.productId,
-                bean.uuid,
-                bean.mac,
-                object : IThingDataCallback<ConfigProductInfoBean> {
-                    override fun onSuccess(info: ConfigProductInfoBean?) {
-                        val device = hashMapOf<String, Any>(
-                            "productId" to bean.productId,
-                            "uuid" to bean.uuid,
-                            "name" to (info?.name ?: ""),
-                            "iconUrl" to (info?.icon ?: ""),
-                            "mac" to bean.mac
-                        )
-
-                        // Send discovered device back
-                        deviceDiscoveryHandler.discoverySink?.success(device)
-                    }
-
-                    override fun onError(errorCode: String?, errorMessage: String?) {
-                        println("Tuya error $errorMessage")
-                        ThingHomeSdk.getBleOperator().stopLeScan()
-                        result.error(errorCode ?: "", errorMessage, null)
-                    }
-                }
-            )
+        println("Tuya check permission $permissionGranted")
+        if (!permissionGranted) {
+            result.error("Permission Denied", "Permission Denied", null)
+            return
         }
-    })
 
-    // Let Flutter know scan started successfully
-    result.success(null)
-}
+        // Stop any previous scan
+        ThingHomeSdk.getBleOperator().stopLeScan()
+
+        // Create scan settings using the builder (like in Tuya docs)
+        val scanSetting = LeScanSetting.Builder()
+            .setTimeout(9000) // scan duration in ms
+            .addScanType(ScanType.SINGLE) // or add multiple types if needed
+            .build()
+
+        // Start scanning
+        ThingHomeSdk.getBleOperator().startLeScan(scanSetting, object : BleScanResponse {
+            override fun onResult(bean: ScanDeviceBean) {
+                println("Tuya Ble ${bean.productId}")
+
+                ThingHomeSdk.getActivatorInstance().getActivatorDeviceInfo(
+                    bean.productId,
+                    bean.uuid,
+                    bean.mac,
+                    object : IThingDataCallback<ConfigProductInfoBean> {
+                        override fun onSuccess(info: ConfigProductInfoBean?) {
+                            val device = hashMapOf<String, Any>(
+                                "productId" to bean.productId,
+                                "uuid" to bean.uuid,
+                                "name" to (info?.name ?: ""),
+                                "iconUrl" to (info?.icon ?: ""),
+                                "mac" to bean.mac
+                            )
+
+                            // Send discovered device back
+                            deviceDiscoveryHandler.discoverySink?.success(device)
+                        }
+
+                        override fun onError(errorCode: String?, errorMessage: String?) {
+                            println("Tuya error $errorMessage")
+                            ThingHomeSdk.getBleOperator().stopLeScan()
+                            result.error(errorCode ?: "", errorMessage, null)
+                        }
+                    }
+                )
+            }
+        })
+
+        // Let Flutter know scan started successfully
+        result.success(null)
+    }
 
     private fun getWifiSsid(result: Result) {
         val connectivityManager =

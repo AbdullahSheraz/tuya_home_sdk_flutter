@@ -13,6 +13,9 @@ class TuyaHomeSdkFlutter {
   final _deviceDiscoveryEvent = const EventChannel(
     'tuya_home_sdk_flutter_device_discovery_event',
   );
+  final EventChannel _wifiEvent = const EventChannel(
+    'tuya_home_sdk_flutter_wifi_discovery_event',
+  );
   static const tag = "Tuya";
 
   TuyaHomeSdkFlutter._();
@@ -1058,6 +1061,29 @@ class TuyaHomeSdkFlutter {
       (dynamic event) =>
           ThingSmartDeviceModel.fromJson(event.cast<String, dynamic>()),
     );
+  }
+
+  /// Starts the discovery of Tuya Wi-fi smart devices and returns a stream of discovered devices.
+  ///
+  /// to a [Map<String, dynamic>] instance.
+  Stream<Map<String, dynamic>> discoverWifiDevices({
+    required String ssid,
+    required String password,
+    required String token,
+    int timeout = 100,
+    String model = 'TY_EZ',
+  }) {
+    final args = {
+      'ssid': ssid,
+      'password': password,
+      'token': token,
+      'timeout': timeout,
+      'model': model,
+    };
+
+    return _wifiEvent.receiveBroadcastStream(args).map((event) {
+      return Map<String, dynamic>.from(event as Map);
+    });
   }
 
   /// Retrieves a list of devices associated with a specific home ID.
