@@ -1056,11 +1056,16 @@ class TuyaHomeSdkFlutter {
   /// Returns a [Stream] of [ThingSmartDeviceModel] representing the discovered devices.
 
   Stream<ThingSmartDeviceModel> discoverDevices() {
-    methodChannel.invokeMethod<dynamic>('discoverDevices');
-    return _deviceDiscoveryEvent.receiveBroadcastStream().map(
-      (dynamic event) =>
-          ThingSmartDeviceModel.fromJson(event.cast<String, dynamic>()),
-    );
+    try {
+      methodChannel.invokeMethod<dynamic>('discoverDevices');
+      return _deviceDiscoveryEvent.receiveBroadcastStream().map(
+        (dynamic event) =>
+            ThingSmartDeviceModel.fromJson(event.cast<String, dynamic>()),
+      );
+    } catch (e) {
+      _log(e);
+      return Stream.empty();
+    }
   }
 
   /// Starts the discovery of Tuya Wi-fi smart devices and returns a stream of discovered devices.
