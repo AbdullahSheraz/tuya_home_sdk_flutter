@@ -638,11 +638,11 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
         val info = hashMapOf<String, Any>()
         val user = ThingHomeSdk.getUserInstance().user
         if (user != null) {
-            info["username"] = user.username
+            info["username"] = user.username 
             info["country_code"] = user.phoneCode
             info["email"] = user.email
             info["ecode"] = user.ecode
-            info["phone_number"] = "90384984984"
+            info["phone_number"] = user?.mobile ?: ""
             info["partner_identity"] = user.partnerIdentity
             info["nickname"] = user.nickName
             info["head_icon_url"] = user.headPic
