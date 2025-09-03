@@ -642,7 +642,7 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
             info["country_code"] = user.phoneCode
             info["email"] = user.email
             info["ecode"] = user.ecode
-            info["phone_number"] = user.mobile
+            info["phone_number"] = "90384984984"
             info["partner_identity"] = user.partnerIdentity
             info["nickname"] = user.nickName
             info["head_icon_url"] = user.headPic
