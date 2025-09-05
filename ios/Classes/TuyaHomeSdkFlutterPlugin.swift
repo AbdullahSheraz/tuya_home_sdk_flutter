@@ -120,9 +120,6 @@ public class TuyaHomeSdkFlutterPlugin: NSObject, FlutterPlugin {
         case "updateUserIcon": updateUserIcon(call, result: result)
 
         case "logout": logout(result: result)
-        case "getSceneList": getSceneList(call, result: result)
-
-        case "fetchSceneDetail": fetchSceneDetail(call, result: result)
         case "addMember": addMember(call, result: result)
         case "queryMemberList": queryMemberList(call, result: result)
         case "removeMember": removeMember(call, result: result)
@@ -1236,94 +1233,6 @@ public class TuyaHomeSdkFlutterPlugin: NSObject, FlutterPlugin {
         dict["vendorInfo"] = deviceModel.vendorInfo
 
         return dict
-    }
-
-    // MARK: Scene managment
-
-    public func getSceneList(
-        _ call: FlutterMethodCall,
-        result: @escaping FlutterResult
-    ) {
-        let args = call.arguments as? [String: Any] ?? [String: Any]()
-
-        let homeId = args["homeId"] as! Int64
-        ThingSmartSceneManager.sharedInstance()?.getSimpleSceneList(
-            withHomeId: homeId
-        ) { list in
-
-            var scenes = [[String: Any?]]()
-
-            list.forEach({
-                item in
-
-                scenes.append(item.toDictionary())
-            })
-            result(scenes)
-
-        } failure: { error in
-            if let error = error as? NSError {
-                print("getSceneList failure: \(error)")
-                result(
-                    FlutterError(
-                        code: error.code.description,
-                        message: error.description,
-                        details: error.debugDescription
-                    )
-                )
-            }
-        }
-
-    }
-
-    public func fetchSceneDetail(
-        _ call: FlutterMethodCall,
-        result: @escaping FlutterResult
-    ) {
-        let args: [String: Any] = call.arguments as! [String: Any]
-        let sceneId = args["sceneId"] as! String
-        let homeId = args["homeId"] as! Int64
-        let ruleGenre = args["ruleGenre"] as! Int
-        let supportHome = args["supportHome"] as! Bool
-        let details = TSceneDetailParams()
-        details.sceneId = sceneId
-        details.gid = homeId
-        details.ruleGenre = ThingSmartSceneRuleGenre.init(
-            rawValue: UInt(ruleGenre)
-        )!
-        details.supportHome = supportHome
-
-        ThingSmartSceneManager.sharedInstance().fetchSceneDetail(with: details)
-        { model in
-
-            result(model.toDictionary())
-        } failure: { error in
-            if let error = error as? NSError {
-                print("fetchSceneDetail failure: \(error)")
-                result(
-                    FlutterError(
-                        code: error.code.description,
-                        message: error.description,
-                        details: error.debugDescription
-                    )
-                )
-            }
-        }
-
-    }
-
-    @available(iOS 13.0, *)
-    func getThingSmartSceneDPModel(_ devId: String) async
-        -> [ThingSmartSceneDPModel]?
-    {
-        await withCheckedContinuation { cont in
-            ThingSmartSceneManager.sharedInstance()?.getCondicationDeviceDPList(
-                withDevId: devId
-            ) { list in
-                cont.resume(returning: list)
-            } failure: { _ in
-                cont.resume(returning: nil)
-            }
-        }
     }
 
     // Member Management
