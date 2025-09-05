@@ -1,5 +1,4 @@
 import Flutter
-import ThingSmartDeviceKit
 import ThingSmartHomeKit
 import UIKit
 
