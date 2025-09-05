@@ -772,7 +772,7 @@ class TuyaHomeSdkFlutterPlugin : FlutterPlugin, MethodCallHandler,
 
     // Scan settings
     val scanSetting = LeScanSetting.Builder()
-        .setTimeout(60000) // duration in ms
+        .setTimeout(9000) // duration in ms
         .addScanType(ScanType.SINGLE)
         .build()
 
